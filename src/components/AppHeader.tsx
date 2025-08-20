@@ -7,7 +7,7 @@ export const AppHeader: React.FC = () => {
   const getAssayDescription = (type: AssayType) => {
     switch (type) {
       case 'S2251':
-        return 'Plasmin Generation Rate Analysis'
+        return 'Plasmin Generation Rate Analysis (S2251 assay)'
       default:
         return 'Enzyme Assay Analysis'
     }
@@ -19,7 +19,7 @@ export const AppHeader: React.FC = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <h1 className="text-2xl font-bold text-gray-900">
-              S2251 Analyzer
+              E3A-Plasmin Generation
             </h1>
             <div className="h-6 w-px bg-gray-300"></div>
             <div>

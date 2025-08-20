@@ -63,7 +63,7 @@ export const InputPanel: React.FC = () => {
           Assay Type
         </label>
         <div className="text-lg font-medium text-accent">
-          S2251 - Plasmin Generation Rate Analysis
+          S2251 - Plasmin Generation Rate Analysis (S2251 assay)
         </div>
       </div>
 
