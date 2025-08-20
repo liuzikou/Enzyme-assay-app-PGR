@@ -82,8 +82,7 @@ export const PasteTable: React.FC = () => {
       console.log('wells to setRawData:', wells)
       setRawData(wells)
       setTimeout(() => {
-        // @ts-ignore
-        console.log('rawData after setRawData:', window.__ASSAY_STORE__ ? window.__ASSAY_STORE__.getState().rawData : wells)
+        // Debug logging removed for production compatibility
       }, 100)
       setSelectedWells(new Set(wells.map(w => w.wellId))) // 自动选中有数据的孔
       setErrors([])

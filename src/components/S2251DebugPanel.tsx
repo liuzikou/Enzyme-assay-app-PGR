@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useAssayStore } from '../features/hooks'
 import { S2251DebugInfo, calculateS2251ForWell } from '../utils/s2251Calculator'
+import { meanDuplicateFromAdjacentWells } from '../utils/metrics'
 
 // Simple chart component for debugging
 const SimpleChart: React.FC<{
@@ -78,7 +79,6 @@ export const S2251DebugPanel: React.FC = () => {
         console.log('Background control data length:', bgCtrl.length)
 
         // Get duplicate data
-        const { meanDuplicateFromAdjacentWells } = await import('../utils/metrics')
         const duplicateData = meanDuplicateFromAdjacentWells(wellId, rawData)
         console.log('Duplicate data found:', !!duplicateData)
 
@@ -172,10 +172,9 @@ export const S2251DebugPanel: React.FC = () => {
       const bgCtrl = controlData[0]
       console.log('Background control data length:', bgCtrl.length)
 
-      // Get duplicate data
-      const { meanDuplicateFromAdjacentWells } = await import('../utils/metrics')
-      const duplicateData = meanDuplicateFromAdjacentWells(wellId, rawData)
-      console.log('Duplicate data found:', !!duplicateData)
+        // Get duplicate data
+        const duplicateData = meanDuplicateFromAdjacentWells(wellId, rawData)
+        console.log('Duplicate data found:', !!duplicateData)
 
       // Use the new S2251 calculation function
       const { result: finalResult, debug } = calculateS2251ForWell(
@@ -235,7 +234,6 @@ export const S2251DebugPanel: React.FC = () => {
         console.log('Background control data length:', bgCtrl.length)
 
         // Get duplicate data
-        const { meanDuplicateFromAdjacentWells } = await import('../utils/metrics')
         const duplicateData = meanDuplicateFromAdjacentWells(wellId, rawData)
         console.log('Duplicate data found:', !!duplicateData)
 
