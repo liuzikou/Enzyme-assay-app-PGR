@@ -4,22 +4,17 @@ interface WellGridProps {
   selected: Set<string>
   onChange: (wellId: string) => void
   control0Wells?: Set<string>
-  control100Wells?: Set<string>
-  onControl0Change?: (wellId: string) => void
-  onControl100Change?: (wellId: string) => void
-  mode?: 'wells' | 'control0' | 'control100' | 'combined'
+  mode?: 'wells' | 'control0' | 'combined'
   disabled?: boolean
-  assayType?: 'T2943' | 'S2251' | 'HoFF'
+  assayType?: 'S2251'
 }
 
 export const WellGrid: React.FC<WellGridProps> = ({
   selected,
   onChange,
   control0Wells = new Set(),
-  control100Wells = new Set(),
   mode = 'wells',
-  disabled = false,
-  assayType
+  disabled = false
 }) => {
   const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
   const cols = Array.from({ length: 12 }, (_, i) => i + 1)
@@ -32,9 +27,6 @@ export const WellGrid: React.FC<WellGridProps> = ({
       if (control0Wells.has(wellId)) {
         return 'bg-blue-500 text-white border-2 border-blue-600'
       }
-      if (control100Wells.has(wellId)) {
-        return 'bg-green-500 text-white border-2 border-green-600'
-      }
       if (selected.has(wellId)) {
         return 'bg-purple-500 text-white border-2 border-purple-600'
       }
@@ -44,10 +36,6 @@ export const WellGrid: React.FC<WellGridProps> = ({
     // Original single-mode behavior
     if (mode === 'control0' && selected.has(wellId)) {
       return 'bg-blue-500 text-white'
-    }
-    
-    if (mode === 'control100' && selected.has(wellId)) {
-      return 'bg-green-500 text-white'
     }
     
     if (mode === 'wells' && selected.has(wellId)) {
@@ -60,9 +48,7 @@ export const WellGrid: React.FC<WellGridProps> = ({
   const getModeTitle = () => {
     switch (mode) {
       case 'control0':
-        return assayType === 'S2251' ? 'Negative Control Wells' : '0% Control Wells'
-      case 'control100':
-        return '100% Control Wells'
+        return 'Negative Control Wells'
       case 'combined':
         return 'Select Wells & Control Wells'
       default:
@@ -132,7 +118,7 @@ export const WellGrid: React.FC<WellGridProps> = ({
                 // Count wells that are in selected but not in control wells
                 let count = 0
                 for (const wellId of selected) {
-                  if (!control0Wells.has(wellId) && !control100Wells.has(wellId)) {
+                  if (!control0Wells.has(wellId)) {
                     count++
                   }
                 }
@@ -141,25 +127,15 @@ export const WellGrid: React.FC<WellGridProps> = ({
             </p>
             <p className="flex items-center gap-2">
               <span className="w-4 h-4 bg-blue-500 rounded border"></span>
-              {assayType === 'S2251' ? 'Negative Control' : '0% Control'}: {control0Wells.size}
+              Negative Control: {control0Wells.size}
             </p>
-            {/* Only show 100% Control if there are any control100Wells */}
-            {control100Wells.size > 0 && (
-              <p className="flex items-center gap-2">
-                <span className="w-4 h-4 bg-green-500 rounded border"></span>
-                100% Control: {control100Wells.size}
-              </p>
-            )}
           </div>
         )}
         {mode === 'wells' && (
           <p>Selected: {selected.size} wells</p>
         )}
         {mode === 'control0' && (
-          <p>{assayType === 'S2251' ? 'Negative Control' : '0% Control'}: {selected.size} wells</p>
-        )}
-        {mode === 'control100' && (
-          <p>100% Control: {selected.size} wells</p>
+          <p>Negative Control: {selected.size} wells</p>
         )}
       </div>
     </div>

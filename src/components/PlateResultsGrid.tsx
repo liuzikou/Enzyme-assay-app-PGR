@@ -13,7 +13,7 @@ const PlateResultsGrid = memo(() => {
   const decDigits = useAssayStore(s => s.decDigits);
   const rawData = useAssayStore(s => s.rawData);
   const selectedWells = useAssayStore(s => s.selectedWells);
-  const assayType = useAssayStore(s => s.assayType);
+
   // Map results to a lookup table for O(1) access
   const resultMap = Object.fromEntries(results.map(r => [r.wellId, r.isValid ? r.value : NaN])) as Record<string, number>;
   const hasData = results.length > 0;
@@ -69,9 +69,9 @@ const PlateResultsGrid = memo(() => {
                           Number.isFinite(val) ? "text-gray-900" : "text-gray-400"
                         }`}
                       >
-                        {showDuplicateLabel ? "dup" : (Number.isFinite(val) ? 
-                          (assayType === 'S2251' ? formatS2251Result(val, sigDigits) : val.toFixed(sigDigits)) 
-                          : "—")}
+                                      {showDuplicateLabel ? "dup" : (Number.isFinite(val) ? 
+                formatS2251Result(val, sigDigits)
+                : "—")}
                       </td>
                     );
                   })}

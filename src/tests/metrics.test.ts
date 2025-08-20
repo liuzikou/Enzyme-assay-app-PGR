@@ -4,70 +4,46 @@ import {
   movingAvg,
   meanDuplicate,
   subtractArray,
-  normaliseAlexa,
-  calcT2943,
-  calcHoFF,
   validateWellData
 } from '../utils/metrics'
 import { calcS2251 } from '../utils/s2251Calculator'
 
-describe('Basic Function Tests', () => {
-  it('should have all functions defined', () => {
+describe('S2251 Function Tests', () => {
+  it('should have all S2251 functions defined', () => {
     expect(typeof diffArray).toBe('function')
     expect(typeof movingAvg).toBe('function')
     expect(typeof meanDuplicate).toBe('function')
     expect(typeof subtractArray).toBe('function')
-    expect(typeof normaliseAlexa).toBe('function')
-    expect(typeof calcT2943).toBe('function')
     expect(typeof calcS2251).toBe('function')
-    expect(typeof calcHoFF).toBe('function')
     expect(typeof validateWellData).toBe('function')
   })
 
   it('should handle basic diffArray', () => {
     const result = diffArray([1, 2, 3, 4], 1)
     expect(Array.isArray(result)).toBe(true)
+    expect(result).toEqual([1, 1, 1])
   })
 
   it('should handle basic movingAvg', () => {
     const result = movingAvg([1, 2, 3, 4], 2)
     expect(Array.isArray(result)).toBe(true)
+    expect(result).toEqual([1.5, 2.5, 3.5])
   })
 
   it('should handle basic meanDuplicate', () => {
     const result = meanDuplicate([[1, 2], [3, 4]])
     expect(Array.isArray(result)).toBe(true)
+    expect(result).toEqual([2, 3])
   })
 
   it('should handle basic subtractArray', () => {
     const result = subtractArray([1, 2, 3], [0, 1, 2])
     expect(Array.isArray(result)).toBe(true)
-  })
-
-  it('should handle basic normaliseAlexa', () => {
-    const result = normaliseAlexa([[1, 2, 3]], 1, 3)
-    expect(Array.isArray(result)).toBe(true)
-  })
-
-  it('should handle basic calcT2943', () => {
-    const result = calcT2943([[1, 2, 3], [1, 2, 3]], 2)
-    expect(typeof result.result).toBe('number')
+    expect(result).toEqual([1, 1, 1])
   })
 
   it('should handle basic calcS2251', () => {
     const result = calcS2251([[1, 2, 3], [1, 2, 3]], [0, 0, 0], 2)
-    expect(typeof result).toBe('number')
-  })
-
-  it('should handle basic calcHoFF', () => {
-    const result = calcHoFF({
-      duplicate: [[1, 2, 3], [1, 2, 3]],
-      bgCtrl: [0, 0, 0],
-      metric: 'MLR',
-      window: 2,
-      alexa0: 1,
-      alexa100: 3
-    })
     expect(typeof result).toBe('number')
   })
 
@@ -76,5 +52,23 @@ describe('Basic Function Tests', () => {
       { wellId: 'A1', timePoints: [1, 2, 3] }
     ])
     expect(Array.isArray(result)).toBe(true)
+    expect(result.length).toBe(0) // No errors for valid data
+  })
+
+  it('should validate well data format', () => {
+    const result = validateWellData([
+      { wellId: 'A1', timePoints: [1, 2, 3] },
+      { wellId: 'B2', timePoints: [4, 5, 6] }
+    ])
+    expect(Array.isArray(result)).toBe(true)
+    expect(result.length).toBe(0) // No errors for valid data
+  })
+
+  it('should detect invalid well IDs', () => {
+    const result = validateWellData([
+      { wellId: 'A13', timePoints: [1, 2, 3] } // Invalid well ID
+    ])
+    expect(Array.isArray(result)).toBe(true)
+    expect(result.length).toBeGreaterThan(0) // Should have errors
   })
 }) 

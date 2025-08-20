@@ -78,16 +78,16 @@ describe('WellGrid', () => {
         mode="control0"
       />
     )
-    expect(screen.getByText('0% Control Wells')).toBeInTheDocument()
+    expect(screen.getByText('Negative Control Wells')).toBeInTheDocument()
 
     rerender(
       <WellGrid
         selected={new Set()}
         onChange={mockOnChange}
-        mode="control100"
+        mode="combined"
       />
     )
-    expect(screen.getByText('100% Control Wells')).toBeInTheDocument()
+    expect(screen.getByText('Select Wells & Control Wells')).toBeInTheDocument()
   })
 
   it('shows correct selection count', () => {
