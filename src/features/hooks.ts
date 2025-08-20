@@ -1,11 +1,10 @@
 import { create } from 'zustand'
 import { z } from 'zod'
-import { calcT2943, calcHoFF, validateWellData, meanDuplicateFromAdjacentWells, isDuplicateWell, getGlobalControlValues, getAveragedControlData } from '../utils/metrics'
+import { validateWellData, meanDuplicateFromAdjacentWells, isDuplicateWell } from '../utils/metrics'
 import { calcS2251 } from '../utils/s2251Calculator'
 
 // Types
-export type AssayType = 'T2943' | 'S2251' | 'HoFF'
-export type HoFFMetric = 'HLT' | 'MLR' | 'TMLR' | 'FI'
+export type AssayType = 'S2251'
 
 export interface WellData {
   wellId: string
@@ -23,13 +22,11 @@ export interface AppState {
   assayType: AssayType
   timeRange: [number, number]
   smoothingWindow: number
-  hoffMetric: HoFFMetric
   
   // Data
   rawData: WellData[]
   selectedWells: Set<string>
   control0Wells: Set<string>
-  control100Wells: Set<string>
   
   // Results
   results: AssayResult[]
@@ -47,13 +44,11 @@ export interface AppActions {
   setAssayType: (type: AssayType) => void
   setTimeRange: (range: [number, number]) => void
   setSmoothingWindow: (window: number) => void
-  setHoffMetric: (metric: HoFFMetric) => void
   
   // Data management
   setRawData: (data: WellData[]) => void
   setSelectedWells: (wells: Set<string>) => void
   setControl0Wells: (wells: Set<string>) => void
-  setControl100Wells: (wells: Set<string>) => void
   
   // Results
   setResults: (results: AssayResult[]) => void
@@ -84,15 +79,13 @@ export const plateDataSchema = z.array(wellDataSchema).length(96)
 // Store
 export const useAssayStore = create<AppStore>((set, get) => ({
   // Initial state
-  assayType: 'T2943',
+  assayType: 'S2251',
   timeRange: [0, 30],
-  smoothingWindow: 10,
-  hoffMetric: 'HLT',
+  smoothingWindow: 5,
   
   rawData: [],
   selectedWells: new Set(),
   control0Wells: new Set(),
-  control100Wells: new Set(),
   
   results: [],
   isLoading: false,
@@ -109,19 +102,16 @@ export const useAssayStore = create<AppStore>((set, get) => ({
   setAssayType: (type) => set({ 
     assayType: type,
     // Set default smoothing window for S2251
-    smoothingWindow: type === 'S2251' ? 5 : 10,
-    // Set default control wells based on assay type
-    control0Wells: type === 'S2251' ? new Set() : new Set(['G11', 'G12']),
-    control100Wells: type === 'HoFF' ? new Set(['H11', 'H12']) : new Set()
+    smoothingWindow: 5,
+    // Set default control wells for S2251
+    control0Wells: new Set()
   }),
   setTimeRange: (range) => set({ timeRange: range }),
   setSmoothingWindow: (window) => set({ smoothingWindow: window }),
-  setHoffMetric: (metric) => set({ hoffMetric: metric }),
   
   setRawData: (data) => set({ rawData: data }),
   setSelectedWells: (wells) => set({ selectedWells: wells }),
   setControl0Wells: (wells) => set({ control0Wells: wells }),
-  setControl100Wells: (wells) => set({ control100Wells: wells }),
   
   setResults: (results) => set({ results }),
   setLoading: (loading) => set({ isLoading: loading }),
@@ -170,93 +160,43 @@ export const useAssayStore = create<AppStore>((set, get) => ({
           // Get duplicate data from adjacent well
           const duplicateData = meanDuplicateFromAdjacentWells(wellId, state.rawData)
           
-          switch (state.assayType) {
-            case 'T2943': {
-              // For T2943, use original duplicate array format and calling pattern
-              const t2943Data = duplicateData ? [wellData.timePoints, duplicateData] : [wellData.timePoints, wellData.timePoints]
-              const calcResult = duplicateData 
-                ? calcT2943(t2943Data, state.smoothingWindow, false, duplicateData)
-                : calcT2943(t2943Data, state.smoothingWindow)
-              value = calcResult.result
-              break
-            }
-            case 'S2251': {
-              if (state.control0Wells.size === 0) {
-                throw new Error('No negative control wells selected for S2251')
-              }
-              
-              // Process control wells the same way as sample wells
-              const controlWells = Array.from(state.control0Wells)
-              const primaryControlWell = controlWells[0] // Use first control well as primary
-              const primaryControlData = state.rawData.find(well => well.wellId === primaryControlWell)?.timePoints
-              
-              if (!primaryControlData) {
-                throw new Error('No negative control data available')
-              }
-              
-              // Get duplicate data for control well (if exists)
-              const controlDuplicateData = meanDuplicateFromAdjacentWells(primaryControlWell, state.rawData)
-              
-              // Prepare control data in same format as sample data
-              let bgCtrlS2251: number[][]
-              if (controlDuplicateData) {
-                bgCtrlS2251 = [primaryControlData, controlDuplicateData]
-              } else {
-                bgCtrlS2251 = [primaryControlData]
-              }
-              
-              // For S2251, use correct data format based on new algorithm
-              let s2251Data: number[][]
-              if (duplicateData) {
-                // Use both original and duplicate data
-                s2251Data = [wellData.timePoints, duplicateData]
-              } else {
-                // Use single well data (wrap in array for meanDuplicate function)
-                s2251Data = [wellData.timePoints]
-              }
-              
-              // Use the new S2251 algorithm with smoothing window
-              value = calcS2251(s2251Data, bgCtrlS2251, state.smoothingWindow)
-              break
-            }
-            case 'HoFF': {
-              if (state.control0Wells.size === 0 || state.control100Wells.size === 0) {
-                throw new Error('Both 0% and 100% control wells required for HoFF')
-              }
-              // Use new processing order: get averaged control values first
-              const { alexa0, alexa100 } = getGlobalControlValues(
-                state.control0Wells, 
-                state.control100Wells, 
-                state.rawData
-              )
-              // Get averaged control data for background control
-              const control0AveragedData = getAveragedControlData(state.control0Wells, state.rawData)
-              if (control0AveragedData.length === 0) {
-                throw new Error('No valid 0% control data after averaging')
-              }
-              const bgCtrlHoFF = control0AveragedData[0]
-              
-              // For HoFF, use processed data based on new logic
-              let processedData: number[][]
-              if (duplicateData) {
-                // Use the already averaged duplicate data
-                processedData = [duplicateData]
-              } else {
-                // No duplicate well, use single well data
-                processedData = [wellData.timePoints]
-              }
-              
-              value = calcHoFF({
-                duplicate: processedData,
-                bgCtrl: bgCtrlHoFF,
-                metric: state.hoffMetric,
-                window: state.smoothingWindow,
-                alexa0,
-                alexa100
-              })
-              break
-            }
+          // S2251 calculation
+          if (state.control0Wells.size === 0) {
+            throw new Error('No negative control wells selected for S2251')
           }
+          
+          // Process control wells the same way as sample wells
+          const controlWells = Array.from(state.control0Wells)
+          const primaryControlWell = controlWells[0] // Use first control well as primary
+          const primaryControlData = state.rawData.find(well => well.wellId === primaryControlWell)?.timePoints
+          
+          if (!primaryControlData) {
+            throw new Error('No negative control data available')
+          }
+          
+          // Get duplicate data for control well (if exists)
+          const controlDuplicateData = meanDuplicateFromAdjacentWells(primaryControlWell, state.rawData)
+          
+          // Prepare control data in same format as sample data
+          let bgCtrlS2251: number[][]
+          if (controlDuplicateData) {
+            bgCtrlS2251 = [primaryControlData, controlDuplicateData]
+          } else {
+            bgCtrlS2251 = [primaryControlData]
+          }
+          
+          // For S2251, use correct data format based on new algorithm
+          let s2251Data: number[][]
+          if (duplicateData) {
+            // Use both original and duplicate data
+            s2251Data = [wellData.timePoints, duplicateData]
+          } else {
+            // Use single well data (wrap in array for meanDuplicate function)
+            s2251Data = [wellData.timePoints]
+          }
+          
+          // Use the new S2251 algorithm with smoothing window
+          value = calcS2251(s2251Data, bgCtrlS2251, state.smoothingWindow)
           
           results.push({
             wellId,
